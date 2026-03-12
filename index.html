@@ -325,6 +325,297 @@
     <div id="view-rest-desk" class="portal-content" style="display: none;">
         <div class="luxury-portal-header">
             <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</d                    </div>
+                </div>
+
+                <!-- Portal Navigation -->
+                <div class="portal-nav pb-2 pt-2">
+                    <button class="nav-btn active" id="nav-reception"
+                        onclick="app.requestPortalSwitch('reception')">Reception</button>
+                    <button class="nav-btn" id="nav-rest-waiter"
+                        onclick="window.open('?view=rest-waiter', '_blank')">Restaurant Waiter</button>
+                    <button class="nav-btn" id="nav-hotel-waiter"
+                        onclick="window.open('?view=hotel-waiter', '_blank')">Hotel Waiter</button>
+                    <button class="nav-btn" id="nav-kitchen" onclick="window.open('?view=kitchen', '_blank')">
+                        Kitchen KDS
+                        <span class="badge" id="kds-badge" style="display:none;">0</span>
+                    </button>
+                    <button class="nav-btn" id="nav-rest-desk"
+                        onclick="window.open('?view=rest-desk', '_blank')">Restaurant Desk</button>
+                    <button class="nav-btn" id="nav-owner" onclick="window.open('?view=owner', '_blank')">Owner
+                        Hub</button>
+                </div>
+
+                <div class="d-flex align-center" style="gap:1rem;">
+                </div>
+            </header>
+
+            <!-- Dynamic Portal View Container -->
+            <main class="workspace" id="portal-view">
+                <!-- RECEPTION PORTAL (Default) -->
+                <div id="view-reception" class="portal-content active">
+                    <div class="luxury-portal-header">
+                        <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+                        <div class="portal-time-luxury">--:-- --</div>
+                    </div>
+                <div class="reception-split-container">
+                    <!-- LEFT COLUMN: Room Grid (2/3) -->
+                    <div class="reception-rooms-area">
+                        <section class="room-section">
+                            <div class="floor">
+                                <h2>First Floor</h2>
+                                <div class="room-grid" id="floor-1"></div>
+                            </div>
+                            <div class="floor mt-4">
+                                <h2>Second Floor</h2>
+                                <div class="room-grid" id="floor-2"></div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Room Order Notify Panel (1/3) -->
+                    <div class="reception-orders-sidebar glass-panel">
+                        <h3 style="color: var(--gold-primary); margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            ROOM ORDERS 
+                            <span id="room-order-count" class="badge show" style="position: relative; top: 0; right: 0;">0</span>
+                        </h3>
+                        <div id="room-orders-panel" style="flex: 1; overflow-y: auto;">
+                            <!-- Populated strictly with Room Orders by app.js -->
+                            <div class="text-gray" style="text-align: center; margin-top: 2rem;">No active room orders</div>
+                        </div>
+                    </div>
+                </div>
+
+                    <!-- REMOVED FROM BOTTOM: Moved to Sidebar -->
+
+                    <!-- 3D Reception Command Center (Side Panel) -->
+                    <aside class="command-center" id="command-center">
+                        <div class="glass-panel cc-inner">
+                            <button class="close-btn" onclick="app.closeCommandCenter()">&times;</button>
+                            <h2 class="cc-title" id="cc-room-title">Room --</h2>
+
+                            <div id="cc-content-empty" class="cc-state-empty" style="display: none;">
+                                <p>Room is available.</p>
+                                <button class="btn btn-primary btn-block mt-4" onclick="app.showCheckInForm()">Check In
+                                    Guest</button>
+                            </div>
+
+                            <div id="cc-content-occupied" class="cc-state-occupied" style="display: none;">
+                                <!-- Guest Profile -->
+                                <div class="cc-section">
+                                    <h3><span class="icon">👤</span> Guest Metadata</h3>
+                                    <div class="metadata-grid">
+                                        <div class="meta-item"><span class="meta-label">Name</span><span
+                                                class="meta-value" id="cc-guest-name">--</span></div>
+                                        <div class="meta-item"><span class="meta-label">Age</span><span
+                                                class="meta-value" id="cc-guest-age">--</span></div>
+                                        <div class="meta-item"><span class="meta-label">Phone</span><span
+                                                class="meta-value" id="cc-guest-phone">--</span></div>
+                                        <div class="meta-item"><span class="meta-label">ID Proof</span><span
+                                                class="meta-value status-badge" id="cc-guest-id">Verified</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- Stay Logistics -->
+                                <div class="cc-section">
+                                    <h3><span class="icon">🗓️</span> Stay Logistics</h3>
+                                    <div class="logistics-card">
+                                        <div class="datetime-row">
+                                            <div class="text-sm text-gray">Check-in (IST)</div>
+                                            <div class="text-md font-bold" id="cc-checkin-datetime">--</div>
+                                        </div>
+                                        <div class="days-counter mt-2">
+                                            <div class="text-sm text-gray">Days Billed (Auto-inc @12PM)</div>
+                                            <div class="text-xl font-bold color-primary" id="cc-stay-days">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ledger -->
+                                <div class="cc-section">
+                                    <h3><span class="icon">💳</span> Live Ledger</h3>
+                                    <div class="ledger-card">
+                                        <div class="ledger-row"><span>Tariff:</span><span id="cc-tariff">₹0</span></div>
+                                        <div class="ledger-row border-bottom pb-2"><span>Room Total (<span
+                                                    id="cc-ledger-days">0</span>d):</span><span
+                                                id="cc-room-total">₹0</span></div>
+                                        <div class="ledger-row mt-2"><span>Food Sync:</span><span
+                                                id="cc-food-total">₹0</span></div>
+                                        <div class="ledger-row border-bottom pb-2"><span>Advance:</span><span
+                                                class="color-success">- ₹<span id="cc-advance">0</span></span></div>
+                                        <div class="ledger-row total-row mt-3"><span>Balance:</span><span
+                                                id="cc-balance" class="balance-value">₹0</span></div>
+                                        <div class="mt-3 pt-2" style="border-top: 1px dashed rgba(255,255,255,0.1);">
+                                            <div class="text-xs text-gray mb-1"
+                                                style="text-transform:uppercase; letter-spacing:1px; font-size: 0.7rem;">
+                                                Itemized Food Bill</div>
+                                        <div id="cc-food-items-list" class="text-sm"
+                                            style="max-height: 150px; overflow-y: auto; color: var(--color-slate-300);">
+                                            <!-- Populated by app.js -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cc-actions">
+                            <button class="btn btn-outline" onclick="app.generateInvoice()">Print
+                                Invoice</button>
+                            <button class="btn btn-danger mt-2" onclick="app.checkout()">Check Out</button>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Reception Notification Panel REPLACED by Sidebar -->
+                </div>
+            </aside>
+                <!-- Check-in Form -->
+                <div id="cc-content-checkin" class="cc-state-checkin" style="display: none;">
+                    <h3>New Check-in</h3>
+                    <form id="checkin-form" onsubmit="app.processCheckin(event)">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="ci-name" required
+                                class="form-control"></div>
+                        <div class="form-group"><label>Age</label><input type="number" id="ci-age" required
+                                class="form-control"></div>
+                        <div class="form-group"><label>Phone</label><input type="tel" id="ci-phone" required
+                                class="form-control"></div>
+                        <div class="form-group"><label>ID Proof</label><select id="ci-id" class="form-control">
+                                <option value="Verified">Verified</option>
+                                <option value="Pending">Pending</option>
+                            </select></div>
+                        <div class="form-group"><label>Tariff (₹)</label><input type="number" id="ci-tariff"
+                                value="2500" required class="form-control"></div>
+                        <div class="form-group"><label>Advance (₹)</label><input type="number" id="ci-advance" value="0"
+                                class="form-control"></div>
+                        <div class="form-actions mt-4">
+                            <button type="button" class="btn btn-outline" onclick="app.showEmptyState()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Confirm Check-in</button>
+                        </div>
+                    </form>
+                </div>
+        </div>
+        </aside>
+    </div>
+
+    <!-- RESTAURANT WAITER PORTAL -->
+    <div id="view-rest-waiter" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar"
+            style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+
+        <div class="waiter-layout" id="rest-waiter-main-layout">
+            <div class="waiter-sidebar glass-panel">
+                <h2 id="rest-waiter-sidebar-title">Select Rest. Table</h2>
+                <div class="waiter-room-list" id="rest-waiter-table-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="waiter-pos glass-panel" id="rest-waiter-pos-area" style="opacity: 0.5; pointer-events: none;">
+                <div class="pos-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <h2 id="rest-waiter-pos-title">Select a table</h2>
+                        <button id="btn-link-table" class="btn btn-outline"
+                            style="display: none; padding: 0.3rem 0.8rem; font-size: 0.9rem; border-color: #A020F0; color: #A020F0;"
+                            onclick="app.showLinkTableModal()">🔗 Link Another Table</button>
+                    </div>
+                    <span id="rest-waiter-table-info" class="text-gray text-sm"></span>
+                </div>
+                <div class="pos-body">
+                    <div style="margin-bottom: 1rem;">
+                        <input type="search" id="rest-waiter-menu-search" class="form-control"
+                            placeholder="Search menu..." oninput="app.filterWaiterMenu('rest-waiter')"
+                            style="background: rgba(15,23,42,0.9); padding: 0.8rem; color: white; border: 1px solid gold; border-radius: 8px; width: 100%; box-shadow: 0 4px 10px rgba(255,215,0,0.1);">
+                    </div>
+                    <div class="pos-menu" id="rest-waiter-menu-grid"></div>
+                    <div class="pos-cart">
+                        <div class="cart-items" id="rest-waiter-cart-items"></div>
+                        <div class="cart-total mt-4">
+                            <div class="d-flex justify-between"><span>Total</span><span class="font-bold text-xl">₹<span
+                                        id="rest-waiter-cart-total">0</span></span></div>
+                            <button class="btn btn-primary btn-block mt-3" onclick="app.placeOrder('rest-waiter')"
+                                id="btn-rest-waiter-order" disabled style="font-size: 1.25rem; padding: 1rem;">Place
+                                Order</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOTEL WAITER PORTAL (Room Service) -->
+    <div id="view-hotel-waiter" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar"
+            style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+
+        <div class="waiter-layout" id="hotel-waiter-main-layout">
+            <div class="waiter-sidebar glass-panel">
+                <h2 id="hotel-waiter-sidebar-title">Select Occupied Room</h2>
+                <div class="waiter-room-list" id="hotel-waiter-room-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="waiter-pos glass-panel" id="hotel-waiter-pos-area" style="opacity: 0.5; pointer-events: none;">
+                <div class="pos-header">
+                    <h2 id="hotel-waiter-pos-title">Select a room to order</h2>
+                </div>
+                <div class="pos-body">
+                    <div style="margin-bottom: 1rem;">
+                        <input type="search" id="hotel-waiter-menu-search" class="form-control"
+                            placeholder="Search menu..." oninput="app.filterWaiterMenu('hotel-waiter')"
+                            style="background: rgba(15,23,42,0.9); padding: 0.8rem; color: white; border: 1px solid gold; border-radius: 8px; width: 100%; box-shadow: 0 4px 10px rgba(255,215,0,0.1);">
+                    </div>
+                    <div class="pos-menu" id="hotel-waiter-menu-grid"></div>
+                    <div class="pos-cart">
+                        <div class="cart-items" id="hotel-waiter-cart-items"></div>
+                        <div class="cart-total mt-4">
+                            <div class="d-flex justify-between"><span>Total</span><span class="font-bold text-xl">₹<span
+                                        id="hotel-waiter-cart-total">0</span></span></div>
+                            <button class="btn btn-primary btn-block mt-3" onclick="app.placeOrder('hotel-waiter')"
+                                id="btn-hotel-waiter-order" disabled>Push to Kitchen & Ledger</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KITCHEN PORTAL (KDS) -->
+    <div id="view-kitchen" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar" style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+        <div class="kds-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2>Kitchen Display System (KDS)</h2>
+                <span class="text-gray">Live Sync Active</span>
+            </div>
+            <button class="btn btn-outline"
+                style="border-color: var(--color-mint-400); color: var(--color-mint-400); font-size: 0.9rem; padding: 0.4rem 0.8rem;"
+                onclick="app.unlockAudioContext()">🔔 Enable Audio</button>
+        </div>
+        <div class="kds-grid" id="kds-grid">
+            <!-- Orders Populated dynamically -->
+        </div>
+    </div>
+
+    <!-- RESTAURANT DESK PORTAL -->
+    <div id="view-rest-desk" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
             <div class="portal-time-luxury">--:-- --</div>
         </div>
         <div class="portal-top-bar"
