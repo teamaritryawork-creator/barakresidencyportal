@@ -294,6 +294,265 @@ function placeGuestOrder() { portal.placeOrder(); }
 function activateReorder()  { portal.activateReorder(); }
 function showTracker()      { portal.showTracker(); }
 
+        // Order continuity across page refreshes (sessionStorage, same tab only)
+        this.activeOrderId  = sessionStorage.getItem(`br_active_order_${this.roomNumber}`) || null;
+        this.sessionHistory = JSON.parse(sessionStorage.getItem(`br_history_${this.roomNumber}`) || '[]');
+
+        this.showLoading(true);
+        await this.fetchGuestData();
+        await this.fetchMenu();
+        this.setupGreeting();
+        this.renderMenu();
+        this.renderHistory();
+        this.showLoading(false);
+
+        if (this.activeOrderId) {
+            this.startStatusPolling(this.activeOrderId);
+        }
+    }
+
+    showLoading(show) {
+        const grid = document.getElementById('menu-grid');
+        if (!grid) return;
+        if (show) {
+            grid.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--text-gray);opacity:0.6;">
+                <div style="font-size:2rem;margin-bottom:1rem;">⏳</div>Loading menu...</div>`;
+        }
+    }
+
+    showError(title, msg) {
+        document.body.innerHTML = `
+            <div style='padding:3rem;text-align:center;height:100vh;display:flex;
+                flex-direction:column;justify-content:center;background:#050B1A;color:white;'>
+                <div style='font-size:3rem;margin-bottom:1rem;'>🚫</div>
+                <h1 style='color:#D4AF37;margin-bottom:1rem;'>${title}</h1>
+                <p style='color:#94A3B8;'>${msg}</p>
+            </div>`;
+    }
+
+    // ── Data Fetching ──────────────────────────────────────────────────────
+
+    async fetchGuestData() {
+        const room = await CloudRooms.get(this.roomNumber);
+        if (room && room.status === 'occupied' && room.guest && room.guest.name) {
+            this.guestName = room.guest.name;
+            document.getElementById('room-display').innerText = `Room ${this.roomNumber} • ${this.guestName}`;
+        } else {
+            document.getElementById('room-display').innerText = `Room ${this.roomNumber}`;
+        }
+    }
+
+    async fetchMenu() {
+        const cloudMenu = await CloudMenu.get();
+        if (cloudMenu && Array.isArray(cloudMenu) && cloudMenu.length > 0) {
+            this.menu = cloudMenu.filter(i => i.isAvailable !== false);
+        } else {
+            this.menu = [
+                { id: 'm1', name: 'Chicken Biryani',      price: 350, icon: '🥘' },
+                { id: 'm2', name: 'Veg Thali',            price: 200, icon: '🍛' },
+                { id: 'm3', name: 'Paneer Butter Masala', price: 280, icon: '🍲' },
+                { id: 'm4', name: 'Tandoori Roti',        price: 25,  icon: '🫓' },
+                { id: 'm5', name: 'Mineral Water',        price: 30,  icon: '💧' },
+                { id: 'm6', name: 'Masala Chai',          price: 40,  icon: '☕' },
+                { id: 'm7', name: 'Cold Coffee',          price: 120, icon: '🧋' },
+                { id: 'm8', name: 'French Fries',         price: 150, icon: '🍟' }
+            ];
+        }
+    }
+
+    // ── Greeting ───────────────────────────────────────────────────────────
+
+    setupGreeting() {
+        const hour    = new Date().getHours();
+        const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+        const name    = (this.guestName || 'Guest').split(' ')[0];
+        document.getElementById('greeting').innerText = `${greeting}, ${name}!`;
+    }
+
+    // ── Menu Render ────────────────────────────────────────────────────────
+
+    renderMenu() {
+        const grid = document.getElementById('menu-grid');
+        grid.innerHTML = '';
+        this.menu.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'food-card';
+            card.innerHTML = `
+                <div class="food-icon">${item.icon}</div>
+                <div class="food-info">
+                    <div class="food-name">${item.name}</div>
+                    <div class="food-price">₹${item.price}</div>
+                </div>
+                <button class="add-btn" onclick="portal.addToCart('${item.id}')">ADD</button>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // ── Cart ───────────────────────────────────────────────────────────────
+
+    addToCart(itemId) {
+        const item = this.menu.find(m => m.id === itemId);
+        if (!item) return;
+        const existing = this.cart.find(c => c.id === itemId);
+        if (existing) existing.qty++;
+        else this.cart.push({ ...item, qty: 1 });
+        this.updateCartBar();
+    }
+
+    updateCartBar() {
+        const bar   = document.getElementById('cart-bar');
+        const info  = document.getElementById('cart-info');
+        const count = this.cart.reduce((s, i) => s + i.qty, 0);
+        const total = this.cart.reduce((s, i) => s + i.price * i.qty, 0);
+        if (count > 0) {
+            info.innerText = `${count} Item${count > 1 ? 's' : ''} | ₹${total}`;
+            bar.classList.add('active');
+        } else {
+            bar.classList.remove('active');
+        }
+    }
+
+    // ── Place Order → Firebase ─────────────────────────────────────────────
+
+    async placeOrder() {
+        if (this.cart.length === 0) return;
+
+        // Prevent double-tap
+        document.getElementById('cart-bar').style.pointerEvents = 'none';
+
+        const isAddon  = !!this.activeOrderId;
+        const orderId  = isAddon
+            ? `ADDON-${this.roomNumber}-${Date.now()}`
+            : `${this.roomNumber}-${Date.now()}`;
+
+        if (!isAddon) {
+            this.activeOrderId = orderId;
+            sessionStorage.setItem(`br_active_order_${this.roomNumber}`, orderId);
+        }
+
+        const itemsList     = this.cart.map(i => `${i.qty}x ${i.name}`);
+        const itemsDetailed = this.cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }));
+        const total         = this.cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+        const orderObj = {
+            id:           orderId,
+            roomId:       this.roomNumber,
+            guestName:    this.guestName,
+            items:        itemsList,
+            itemsDetailed,
+            total,
+            status:       'preparing',
+            orderType:    'room',
+            timestamp:    Date.now()
+        };
+
+        // Write to Firebase — all three happen in parallel
+        await Promise.all([
+            CloudOrders.save(orderObj),                                       // → KDS sees it
+            CloudRooms.addFoodOrder(this.roomNumber, orderObj, total),        // → Reception ledger
+            CloudNotifications.add({                                          // → Reception alert
+                id:        Date.now().toString(),
+                type:      'order',
+                message:   `QR ${isAddon ? 'ADD-ON' : 'ORDER'}: Room ${this.roomNumber} — ${itemsList.join(', ')}`,
+                timestamp: Date.now(),
+                status:    'new',
+                target:    'reception',
+                data:      { type: 'room', orderId, roomId: this.roomNumber, items: itemsList, total }
+            })
+        ]);
+
+        // Update session history for local display
+        this.sessionHistory.push(...this.cart.map(i => ({ ...i })));
+        sessionStorage.setItem(`br_history_${this.roomNumber}`, JSON.stringify(this.sessionHistory));
+
+        this.cart = [];
+        this.updateCartBar();
+        this.renderHistory();
+
+        document.getElementById('success-screen').style.display = 'flex';
+        this.updateTrackingUI('preparing');
+        this.startStatusPolling(orderId);
+
+        document.getElementById('cart-bar').style.pointerEvents = '';
+    }
+
+    // ── Live Status Polling ────────────────────────────────────────────────
+
+    startStatusPolling(orderId) {
+        if (this.statusPollTimer) clearInterval(this.statusPollTimer);
+
+        this.statusPollTimer = fbListen(
+            `kitchenOrders/${String(orderId).replace(/[.#$[\]]/g, '_')}`,
+            6000,
+            (order) => {
+                if (!order || !order.status) return;
+                this.updateTrackingUI(order.status);
+                if (order.status === 'delivered') {
+                    clearInterval(this.statusPollTimer);
+                    sessionStorage.removeItem(`br_active_order_${this.roomNumber}`);
+                    this.activeOrderId = null;
+                }
+            }
+        );
+    }
+
+    updateTrackingUI(status) {
+        const tracker    = document.getElementById('tracker');
+        const progress   = document.getElementById('timeline-progress');
+        const statusLabel = document.getElementById('status-label');
+
+        tracker.classList.add('active');
+        document.getElementById('order-id-display').innerText = `ID: #${this.activeOrderId}`;
+
+        for (let i = 1; i <= 4; i++) document.getElementById(`step-${i}`).classList.remove('active', 'done');
+
+        const states = {
+            placed:    { h: '0%',   done: [],       active: 1, label: 'Order Placed'           },
+            preparing: { h: '33%',  done: [1],      active: 2, label: 'Food is Being Prepared'  },
+            ready:     { h: '66%',  done: [1,2],    active: 3, label: 'Food is on the Way'      },
+            delivered: { h: '100%', done: [1,2,3],  active: 4, label: 'Order Delivered. Enjoy!' }
+        };
+
+        const s = states[status] || states.placed;
+        progress.style.height = s.h;
+        s.done.forEach(n => document.getElementById(`step-${n}`).classList.add('done'));
+        document.getElementById(`step-${s.active}`).classList.add('active');
+        statusLabel.innerText = s.label;
+
+        this.renderHistory();
+    }
+
+    // ── Session History ────────────────────────────────────────────────────
+
+    renderHistory() {
+        const list = document.getElementById('session-items-list');
+        if (!list) return;
+        if (this.sessionHistory.length === 0) {
+            list.innerHTML = '<div style="opacity:0.5;">No items ordered yet.</div>';
+            return;
+        }
+        const summary = {};
+        this.sessionHistory.forEach(i => { summary[i.name] = (summary[i.name] || 0) + i.qty; });
+        list.innerHTML = Object.entries(summary).map(([name, qty]) =>
+            `<div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span>${name}</span>
+                <span style="color:var(--gold-primary);">x${qty}</span>
+            </div>`
+        ).join('');
+    }
+
+    // ── Controls ───────────────────────────────────────────────────────────
+
+    activateReorder() { document.getElementById('tracker').classList.remove('active'); }
+    showTracker()     { document.getElementById('success-screen').style.display = 'none'; document.getElementById('tracker').classList.add('active'); }
+}
+
+const portal = new GuestPortal();
+function placeGuestOrder() { portal.placeOrder(); }
+function activateReorder()  { portal.activateReorder(); }
+function showTracker()      { portal.showTracker(); }
+
         if (!storedSession.token) {
             this.sessionToken = 'G-' + Math.random().toString(36).substr(2, 9);
             localStorage.setItem('br_guest_session', JSON.stringify({ room: this.roomNumber, token: this.sessionToken }));
