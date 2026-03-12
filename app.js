@@ -308,6 +308,392 @@ class CentralDatabase {
 
     generateRooms() {
         const rooms = {};
+        for (let i = 1; i <= 8; i++) { const num = String(100 + i); rooms[num] = this.createEmptyRoom(num, 1); }
+        for (let i = 1; i <= 8; i++) { const num = String(200 + i); rooms[num] = this.createEmptyRoom(num, 2); }
+        return rooms;
+    }
+
+    generateTables() {
+        const tables = {};
+        const letters = ['A','B','C','D','E','F','G','H'];
+        letters.forEach(letter => {
+            tables[letter] = {
+                id: letter, status: 'available', pax: 0, guestName: null, lastSeqId: 0,
+                chairs: [
+                    { id: letter+'-1', status: 'available' }, { id: letter+'-2', status: 'available' },
+                    { id: letter+'-3', status: 'available' }, { id: letter+'-4', status: 'available' }
+                ],
+                activeBills: [], orders: [], total: 0
+            };
+        });
+        return tables;
+    }
+
+    createEmptyRoom(number, floor) {
+        return { number, floor, status: 'available', guest: null };
+    }
+
+    formattedIST(timestamp) {
+        return new Date(timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
+    }
+
+    timeOnlyIST(timestamp) {
+        return new Date(timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', timeStyle: 'short', hour12: true });
+    }
+}
+
+
+class PMSApp {
+    constructor(isolatedView = null) {
+        this.isolatedView   = isolatedView;
+        this.db             = new CentralDatabase();
+        this.selectedRoomId = null;
+        this.currentPortal  = isolatedView || 'reception';
+        this.revenueChart   = null;
+        this.profitabilityChart = null;
+        this.audioUnlocked  = false;
+
+        this.isOnline = navigator.onLine;
+        window.addEventListener('online',  () => this.handleNetworkChange(true));
+        window.addEventListener('offline', () => this.handleNetworkChange(false));
+
+        // Same-device cross-tab sync (localStorage events)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kds_sync' && e.newValue) {
+                try {
+                    const newOrder = JSON.parse(e.newValue);
+                    const idx = this.db.kitchenOrders.findIndex(o => o.id === newOrder.id);
+                    if (idx !== -1) this.db.kitchenOrders[idx] = newOrder;
+                    else this.db.kitchenOrders.push(newOrder);
+                    if (this.currentPortal === 'kitchen') {
+                        this.renderKDS();
+                        this.checkKDSAlerts();
+                        const bell = document.getElementById('success-chime');
+                        if (bell) bell.play().catch(() => {});
+                    }
+                } catch(err) { console.error('KDS sync error', err); }
+            } else if (e.key === 'yukt_pms_sync') {
+                const savedTables = localStorage.getItem('yukt_rest_tables');
+                if (savedTables) this.db.restaurantTables = JSON.parse(savedTables);
+                this.db.restaurantRevenue         = parseFloat(localStorage.getItem('yukt_rest_rev')) || 0;
+                this.db.restaurantCustomersToday  = parseInt(localStorage.getItem('yukt_rest_pax')) || 0;
+                this.db.unavailableItems = JSON.parse(localStorage.getItem('br_unavailable_items')) || [];
+                this.db.roomLedger       = JSON.parse(localStorage.getItem('br_room_ledger')) || {};
+                this.db.menu             = JSON.parse(localStorage.getItem('br_menu')) || this.db.menu;
+                this.db.initDB().then(() => {
+                    this.syncState();
+                    if (this.currentPortal === 'kitchen')      this.checkKDSAlerts();
+                    if (this.currentPortal === 'hotel-waiter') this.renderHotelWaiterSidebar();
+                    if (this.currentPortal === 'rest-waiter')  this.renderRestWaiterSidebar();
+                });
+            } else if (e.key === 'yukt_notification_sync' && e.newValue) {
+                try {
+                    const note = JSON.parse(e.newValue);
+                    if (!this.db.notifications.some(n => n.id === note.id)) {
+                        this.db.notifications.unshift(note);
+                        if (this.db.notifications.length > 30) this.db.notifications.pop();
+                        this.syncState();
+                    }
+                } catch(err) { console.error('Notification sync error', err); }
+            }
+        });
+
+        // Init App
+        this.db.initDB().then(() => {
+            this.checkGuestURL();
+            if (!this.isGuestMode) {
+                this.initAdminEcosystem();
+                this._startFirebaseSync();
+                setTimeout(() => this.syncState(), 1500);
+                setTimeout(() => this.syncState(), 4000);
+            }
+        });
+    }
+
+    // ── Cross-device Firebase polling ─────────────────────────────────────
+    _startFirebaseSync() {
+        // Poll kitchen orders every 8s — picks up guest QR orders from their phones
+        fbListen('kitchenOrders', 8000, (data) => {
+            if (!data) return;
+            const incoming = Object.values(data);
+            let changed = false;
+            incoming.forEach(order => {
+                const idx = this.db.kitchenOrders.findIndex(o => o.id === order.id);
+                if (idx !== -1) {
+                    if (JSON.stringify(this.db.kitchenOrd        room.guest.foodOrders.push(orderObj);
+        room.guest.foodTotal += total;
+        return this.save(room);
+    }
+};
+
+const CloudOrders = {
+    getAll:       ()        => fbGet('kitchenOrders').then(d => d ? Object.values(d) : []),
+    get:          (id)      => fbGet(`kitchenOrders/${fbKey(id)}`),
+    save:         (o)       => fbSet(`kitchenOrders/${fbKey(o.id)}`, o),
+    updateStatus: (id, s)   => fbPatch(`kitchenOrders/${fbKey(id)}`, { status: s }),
+    remove:       (id)      => fbDelete(`kitchenOrders/${fbKey(id)}`)
+};
+
+const CloudNotifications = {
+    getAll: () => fbGet('notifications').then(d => d ? Object.values(d).sort((a,b)=>b.timestamp-a.timestamp).slice(0,50) : []),
+    add:    (n) => fbPush('notifications', n),
+    clear:  ()  => fbDelete('notifications')
+};
+
+const CloudMenu = {
+    get:  ()    => fbGet('menu'),
+    save: (arr) => fbSet('menu', arr)
+};
+
+// expose to order.js as well
+window.CloudRooms         = CloudRooms;
+window.CloudOrders        = CloudOrders;
+window.CloudNotifications = CloudNotifications;
+window.CloudMenu          = CloudMenu;
+window.fbListen           = fbListen;
+
+// ── CentralDatabase ────────────────────────────────────────────────────────
+class CentralDatabase {
+    constructor() {
+        this.kitchenOrders = [];
+        this.salesHistory  = [];
+        this.notifications = [];
+        this.activePickups = JSON.parse(localStorage.getItem('yukt_active_pickups')) || [];
+        this.roomLedger    = JSON.parse(localStorage.getItem('br_room_ledger')) || {};
+        this.lastOrderId   = parseInt(localStorage.getItem('yukt_last_order_id')) || 0;
+
+        const savedTables = localStorage.getItem('yukt_rest_tables');
+        this.restaurantTables = savedTables ? JSON.parse(savedTables) : this.generateTables();
+
+        if (this.restaurantTables['1']) {
+            this.restaurantTables = this.generateTables();
+        }
+
+        this.restaurantRevenue = parseFloat(localStorage.getItem('yukt_rest_rev')) || 0;
+        this.restaurantCustomersToday = parseInt(localStorage.getItem('yukt_rest_pax')) || 0;
+
+        this.menu = JSON.parse(localStorage.getItem('br_menu')) || [
+            { id: 'm1', name: 'Chicken Biryani', price: 350, icon: '🥘', category: 'Dishes', description: 'Fragrant basmati rice cooked with tender chicken and spices.', photo: '', isAvailable: true },
+            { id: 'm2', name: 'Veg Thali', price: 200, icon: '🍛', category: 'Thalis', description: 'A complete meal with rice, dal, subji, and roti.', photo: '', isAvailable: true },
+            { id: 'm3', name: 'Paneer Butter Masala', price: 280, icon: '🍲', category: 'Dishes', description: 'Creamy tomato-based gravy with soft paneer cubes.', photo: '', isAvailable: true },
+            { id: 'm4', name: 'Tandoori Roti', price: 25, icon: '🫓', category: 'Dishes', description: 'Traditional clay oven-baked flatbread.', photo: '', isAvailable: true },
+            { id: 'm5', name: 'Mineral Water', price: 30, icon: '💧', category: 'Drinks', description: 'Purified drinking water.', photo: '', isAvailable: true },
+            { id: 'm6', name: 'Masala Chai', price: 40, icon: '☕', category: 'Drinks', description: 'Spiced Indian tea with milk.', photo: '', isAvailable: true },
+            { id: 'm7', name: 'Cold Coffee', photo: '', category: 'Drinks', description: 'Refreshingly chilled coffee blend.', isAvailable: true, price: 120, icon: '🧋' },
+            { id: 'm8', name: 'French Fries', price: 150, icon: '🍟', category: 'Snacks', description: 'Crispy golden potato fries.', photo: '', isAvailable: true }
+        ];
+        this.unavailableItems = JSON.parse(localStorage.getItem('br_unavailable_items')) || [];
+
+        this.cart = [];
+        this.activeRoomContext = null;
+
+        this.inventory = [
+            { id: 'i1', item: 'Groceries (Rice, Dal, Oil)', category: 'Kitchen', stock: 45, threshold: 20 },
+            { id: 'i2', item: 'Mineral Water (Bottles)', category: 'Beverages', stock: 15, threshold: 50 },
+            { id: 'i3', item: 'Fresh Vegetables (KG)', category: 'Kitchen', stock: 8, threshold: 10 },
+            { id: 'i4', item: 'Housekeeping (Soaps, Linen)', category: 'Operations', stock: 120, threshold: 50 },
+            { id: 'i5', item: 'Chicken/Meat (KG)', category: 'Kitchen', stock: 2, threshold: 15 }
+        ];
+
+        this.employees = [
+            { id: 'e1', name: 'Ramesh Singh', role: 'Head Chef', baseSalary: 35000, advances: 5000 },
+            { id: 'e2', name: 'Alok Barman', role: 'Waiter', baseSalary: 15000, advances: 0 },
+            { id: 'e3', name: 'Priya Das', role: 'Receptionist', baseSalary: 18000, advances: 2000 },
+            { id: 'e4', name: 'Mithun', role: 'Housekeeping', baseSalary: 12000, advances: 1000 }
+        ];
+
+        this.dbName    = 'br-pro-db';
+        this.dbVersion = 1;
+        this.idb       = null;
+    }
+
+    // ── Firebase-backed initDB ─────────────────────────────────────────────
+    initDB() {
+        return new Promise(async (resolve) => {
+            try {
+                // Load rooms from Firebase
+                const roomsData = await CloudRooms.getAll();
+                if (roomsData && Object.keys(roomsData).length > 0) {
+                    this.rooms = roomsData;
+                } else {
+                    this.rooms = this.generateRooms();
+                    await CloudRooms.saveAll(this.rooms);
+                }
+
+                // Load kitchen orders
+                this.kitchenOrders = await CloudOrders.getAll();
+
+                // Load notifications
+                this.notifications = await CloudNotifications.getAll();
+
+                // Load menu from Firebase (overrides localStorage if present)
+                const cloudMenu = await CloudMenu.get();
+                if (cloudMenu && Array.isArray(cloudMenu) && cloudMenu.length > 0) {
+                    this.menu = cloudMenu;
+                    localStorage.setItem('br_menu', JSON.stringify(this.menu));
+                }
+
+                // Also open IndexedDB for salesHistory (local only, fine)
+                await this._openIDB();
+
+                this.loadMenuFromCSV();
+                resolve();
+            } catch (e) {
+                console.error('[Firebase] initDB error, falling back:', e);
+                await this._openIDB().catch(() => {});
+                resolve();
+            }
+        });
+    }
+
+    // Keep IndexedDB only for salesHistory (local reporting, doesn't need cross-device)
+    _openIDB() {
+        return new Promise((resolve) => {
+            const req = indexedDB.open(this.dbName, this.dbVersion);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('rooms'))         db.createObjectStore('rooms', { keyPath: 'number' });
+                if (!db.objectStoreNames.contains('kitchenOrders')) db.createObjectStore('kitchenOrders', { keyPath: 'id' });
+                if (!db.objectStoreNames.contains('salesHistory'))  db.createObjectStore('salesHistory', { autoIncrement: true });
+            };
+            req.onsuccess = (e) => { this.idb = e.target.result; resolve(); };
+            req.onerror   = ()  => resolve();
+        });
+    }
+
+    loadStateFromDB() { return this.initDB(); } // alias for compatibility
+
+    async loadMenuFromCSV() {
+        try {
+            const response = await fetch('menu.csv');
+            if (!response.ok) return;
+            const text = await response.text();
+            const lines = text.split('\n');
+            const newMenu = [];
+            const headers = lines[0].split(',').map(h => h.trim());
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split(',');
+                const item = {};
+                headers.forEach((h, idx) => {
+                    let val = cols[idx] ? cols[idx].trim() : '';
+                    if (h === 'price') val = parseFloat(val) || 0;
+                    item[h] = val;
+                });
+                item.isAvailable = true;
+                newMenu.push(item);
+            }
+            if (newMenu.length > 0) {
+                this.menu = newMenu;
+                localStorage.setItem('br_menu', JSON.stringify(this.menu));
+                CloudMenu.save(this.menu);
+            }
+        } catch (err) { console.warn("CSV not found, using cached menu", err); }
+    }
+
+    triggerSyncEvent() {
+        localStorage.setItem('yukt_pms_sync', Date.now().toString());
+    }
+
+    persistTables()      { localStorage.setItem('yukt_rest_tables', JSON.stringify(this.restaurantTables)); this.triggerSyncEvent(); }
+    persistRestRevenue() { localStorage.setItem('yukt_rest_rev', this.restaurantRevenue.toString()); this.triggerSyncEvent(); }
+    persistRestPax()     { localStorage.setItem('yukt_rest_pax', this.restaurantCustomersToday.toString()); this.triggerSyncEvent(); }
+    persistRoomLedger()  { localStorage.setItem('br_room_ledger', JSON.stringify(this.roomLedger)); this.triggerSyncEvent(); }
+    persistPickups()     { localStorage.setItem('yukt_active_pickups', JSON.stringify(this.activePickups)); this.triggerSyncEvent(); }
+    persistUnavailable() { localStorage.setItem('br_unavailable_items', JSON.stringify(this.unavailableItems)); this.triggerSyncEvent(); }
+
+    // ── Cloud persist functions ────────────────────────────────────────────
+    persistRooms() {
+        CloudRooms.saveAll(this.rooms);
+        this.triggerSyncEvent();
+    }
+
+    persistRoom(roomNumber) {
+        CloudRooms.save(this.rooms[roomNumber]);
+        this.triggerSyncEvent();
+    }
+
+    persistKitchenOrder(orderObj) {
+        CloudOrders.save(orderObj);
+        localStorage.setItem('kds_sync', JSON.stringify(orderObj)); // same-device KDS tab
+        this.triggerSyncEvent();
+    }
+
+    persistKitchenSync() {
+        this.kitchenOrders.forEach(o => CloudOrders.save(o));
+        this.triggerSyncEvent();
+    }
+
+    persistSale(saleObj) {
+        if (!this.idb) return;
+        const tx = this.idb.transaction('salesHistory', 'readwrite');
+        tx.objectStore('salesHistory').add(saleObj);
+    }
+
+    persistNotifications() {
+        localStorage.setItem('yukt_notifications', JSON.stringify(this.notifications));
+        this.triggerSyncEvent();
+    }
+
+    addNotification(type, message, target = 'both', data = null) {
+        const note = {
+            id:        Date.now().toString() + Math.random().toString(36).substr(2,4),
+            type,
+            message,
+            timestamp: Date.now(),
+            status:    'new',
+            target,
+            data
+        };
+        this.notifications.unshift(note);
+        if (this.notifications.length > 50) this.notifications.pop();
+        this.persistNotifications();
+        CloudNotifications.add(note);                                  // → other devices
+        localStorage.setItem('yukt_notification_sync', JSON.stringify(note)); // → same-device tabs
+    }
+
+    clearNotifications() {
+        this.notifications = [];
+        this.persistNotifications();
+        CloudNotifications.clear();
+    }
+
+    persistMenu() {
+        localStorage.setItem('br_menu', JSON.stringify(this.menu));
+        CloudMenu.save(this.menu);   // → guest phones get updated menu
+        this.triggerSyncEvent();
+    }
+
+    syncMenuFromCSV(csvText) {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const newMenu = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            if (values.length < headers.length) continue;
+            const item = {};
+            headers.forEach((h, idx) => {
+                let val = values[idx];
+                if (h === 'price') val = parseFloat(val) || 0;
+                if (h === 'isavailable') val = val.toLowerCase() === 'true';
+                item[h] = val;
+            });
+            if (!item.id) item.id = `ext-${i}`;
+            if (!item.isavailable && item.isavailable !== false) item.isavailable = true;
+            newMenu.push(item);
+        }
+        if (newMenu.length > 0) {
+            this.menu = newMenu;
+            localStorage.setItem('br_menu', JSON.stringify(this.menu));
+            CloudMenu.save(this.menu);
+            this.triggerSyncEvent();
+            return true;
+        }
+        return false;
+    }
+
+    generateRooms() {
+        const rooms = {};
         for (let i = 1; i <= 8; i++) { const num = `10${i}`; rooms[num] = this.createEmptyRoom(num, 1); }
         for (let i = 1; i <= 8; i++) { const num = `20${i}`; rooms[num] = this.createEmptyRoom(num, 2); }
         return rooms;
