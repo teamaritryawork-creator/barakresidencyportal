@@ -1,0 +1,11 @@
+id,name,price,category,icon,description,photo
+m1,Chicken Biryani,350,Dishes,🥘,Fragrant long-grain rice with tender chicken.,
+m2,Veg Thali,200,Dishes,🍛,Assorted vegetarian delights with rice and dal.,
+m3,Paneer Butter Masala,280,Dishes,🍲,Cottage cheese in a rich tomato gravy.,
+m4,Tandoori Roti,25,Dishes,🫓,Traditional clay oven-baked flatbread.,
+m5,Mineral Water,30,Drinks,💧,Purified drinking water.,
+m6,Masala Chai,40,Drinks,☕,Spiced Indian tea with milk.,
+m7,Cold Coffee,120,Drinks,🧋,Refreshingly chilled coffee blend.,
+m8,French Fries,150,Snacks,🍟,Crispy golden potato fries.,
+m9,Cold Drink 500ml,60,Drinks,🥤,Assorted chilled beverages.,
+m10,Chilli Chicken,320,Dishes,🍗,Spicy Indo-Chinese chicken appetizer.,

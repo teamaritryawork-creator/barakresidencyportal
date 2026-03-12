@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Barak Residency Pro PMS</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="favicon.ico">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for Owner Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div id="root-isolated">
+
+
+
+
+        <!-- Main App Container (Hidden in Guest Portal Mode) -->
+        <div class="app-container" id="app-container">
+
+            <!-- Stealth Header Wrapper -->
+            <div class="stealth-trigger"></div>
+            <header class="header stealth-header" id="main-header">
+                <div class="brand">
+                    <img src="br.png" alt="Barak Residency" class="logo">
+                    <div style="display: flex; flex-direction: column;">
+                        <h1 style="color: var(--gold-primary); font-family: 'Outfit', serif; letter-spacing: 2px; text-transform: uppercase; margin: 0;">BARAK RESIDENCY</h1>
+                        <span style="color: var(--gold-primary); font-size: 0.8rem; letter-spacing: 4px; opacity: 0.8; margin-top: -5px;">SILCHAR</span>
+                    </div>
+                </div>
+
+                <!-- Portal Navigation -->
+                <div class="portal-nav pb-2 pt-2">
+                    <button class="nav-btn active" id="nav-reception"
+                        onclick="app.requestPortalSwitch('reception')">Reception</button>
+                    <button class="nav-btn" id="nav-rest-waiter"
+                        onclick="window.open('?view=rest-waiter', '_blank')">Restaurant Waiter</button>
+                    <button class="nav-btn" id="nav-hotel-waiter"
+                        onclick="window.open('?view=hotel-waiter', '_blank')">Hotel Waiter</button>
+                    <button class="nav-btn" id="nav-kitchen" onclick="window.open('?view=kitchen', '_blank')">
+                        Kitchen KDS
+                        <span class="badge" id="kds-badge" style="display:none;">0</span>
+                    </button>
+                    <button class="nav-btn" id="nav-rest-desk"
+                        onclick="window.open('?view=rest-desk', '_blank')">Restaurant Desk</button>
+                    <button class="nav-btn" id="nav-owner" onclick="window.open('?view=owner', '_blank')">Owner
+                        Hub</button>
+                </div>
+
+                <div class="d-flex align-center" style="gap:1rem;">
+                </div>
+            </header>
+
+            <!-- Dynamic Portal View Container -->
+            <main class="workspace" id="portal-view">
+                <!-- RECEPTION PORTAL (Default) -->
+                <div id="view-reception" class="portal-content active">
+                    <div class="luxury-portal-header">
+                        <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+                        <div class="portal-time-luxury">--:-- --</div>
+                    </div>
+                <div class="reception-split-container">
+                    <!-- LEFT COLUMN: Room Grid (2/3) -->
+                    <div class="reception-rooms-area">
+                        <section class="room-section">
+                            <div class="floor">
+                                <h2>First Floor</h2>
+                                <div class="room-grid" id="floor-1"></div>
+                            </div>
+                            <div class="floor mt-4">
+                                <h2>Second Floor</h2>
+                                <div class="room-grid" id="floor-2"></div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Room Order Notify Panel (1/3) -->
+                    <div class="reception-orders-sidebar glass-panel">
+                        <h3 style="color: var(--gold-primary); margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            ROOM ORDERS 
+                            <span id="room-order-count" class="badge show" style="position: relative; top: 0; right: 0;">0</span>
+                        </h3>
+                        <div id="room-orders-panel" style="flex: 1; overflow-y: auto;">
+                            <!-- Populated strictly with Room Orders by app.js -->
+                            <div class="text-gray" style="text-align: center; margin-top: 2rem;">No active room orders</div>
+                        </div>
+                    </div>
+                </div>
+
+                    <!-- REMOVED FROM BOTTOM: Moved to Sidebar -->
+
+                    <!-- 3D Reception Command Center (Side Panel) -->
+                    <aside class="command-center" id="command-center">
+                        <div class="glass-panel cc-inner">
+                            <button class="close-btn" onclick="app.closeCommandCenter()">&times;</button>
+                            <h2 class="cc-title" id="cc-room-title">Room --</h2>
+
+                            <div id="cc-content-empty" class="cc-state-empty" style="display: none;">
+                                <p>Room is available.</p>
+                                <button class="btn btn-primary btn-block mt-4" onclick="app.showCheckInForm()">Check In
+                                    Guest</button>
+                            </div>
+
+                            <div id="cc-content-occupied" class="cc-state-occupied" style="display: none;">
+                                <!-- Guest Profile -->
+                                <div class="cc-section">
+                                    <h3><span class="icon">👤</span> Guest Metadata</h3>
+                                    <div class="metadata-grid">
+                                        <div class="meta-item"><span class="meta-label">Name</span><span
+                                                class="meta-value" id="cc-guest-name">--</span></div>
+                                        <div class="meta-item"><span class="meta-label">Age</span><span
+                                                class="meta-value" id="cc-guest-age">--</span></div>
+                                        <div class="meta-item"><span class="meta-label">Phone</span><span
+                                                class="meta-value" id="cc-guest-phone">--</span></div>
+                                        <div class="meta-item"><span class="meta-label">ID Proof</span><span
+                                                class="meta-value status-badge" id="cc-guest-id">Verified</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- Stay Logistics -->
+                                <div class="cc-section">
+                                    <h3><span class="icon">🗓️</span> Stay Logistics</h3>
+                                    <div class="logistics-card">
+                                        <div class="datetime-row">
+                                            <div class="text-sm text-gray">Check-in (IST)</div>
+                                            <div class="text-md font-bold" id="cc-checkin-datetime">--</div>
+                                        </div>
+                                        <div class="days-counter mt-2">
+                                            <div class="text-sm text-gray">Days Billed (Auto-inc @12PM)</div>
+                                            <div class="text-xl font-bold color-primary" id="cc-stay-days">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ledger -->
+                                <div class="cc-section">
+                                    <h3><span class="icon">💳</span> Live Ledger</h3>
+                                    <div class="ledger-card">
+                                        <div class="ledger-row"><span>Tariff:</span><span id="cc-tariff">₹0</span></div>
+                                        <div class="ledger-row border-bottom pb-2"><span>Room Total (<span
+                                                    id="cc-ledger-days">0</span>d):</span><span
+                                                id="cc-room-total">₹0</span></div>
+                                        <div class="ledger-row mt-2"><span>Food Sync:</span><span
+                                                id="cc-food-total">₹0</span></div>
+                                        <div class="ledger-row border-bottom pb-2"><span>Advance:</span><span
+                                                class="color-success">- ₹<span id="cc-advance">0</span></span></div>
+                                        <div class="ledger-row total-row mt-3"><span>Balance:</span><span
+                                                id="cc-balance" class="balance-value">₹0</span></div>
+                                        <div class="mt-3 pt-2" style="border-top: 1px dashed rgba(255,255,255,0.1);">
+                                            <div class="text-xs text-gray mb-1"
+                                                style="text-transform:uppercase; letter-spacing:1px; font-size: 0.7rem;">
+                                                Itemized Food Bill</div>
+                                        <div id="cc-food-items-list" class="text-sm"
+                                            style="max-height: 150px; overflow-y: auto; color: var(--color-slate-300);">
+                                            <!-- Populated by app.js -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cc-actions">
+                            <button class="btn btn-outline" onclick="app.generateInvoice()">Print
+                                Invoice</button>
+                            <button class="btn btn-danger mt-2" onclick="app.checkout()">Check Out</button>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Reception Notification Panel REPLACED by Sidebar -->
+                </div>
+            </aside>
+                <!-- Check-in Form -->
+                <div id="cc-content-checkin" class="cc-state-checkin" style="display: none;">
+                    <h3>New Check-in</h3>
+                    <form id="checkin-form" onsubmit="app.processCheckin(event)">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="ci-name" required
+                                class="form-control"></div>
+                        <div class="form-group"><label>Age</label><input type="number" id="ci-age" required
+                                class="form-control"></div>
+                        <div class="form-group"><label>Phone</label><input type="tel" id="ci-phone" required
+                                class="form-control"></div>
+                        <div class="form-group"><label>ID Proof</label><select id="ci-id" class="form-control">
+                                <option value="Verified">Verified</option>
+                                <option value="Pending">Pending</option>
+                            </select></div>
+                        <div class="form-group"><label>Tariff (₹)</label><input type="number" id="ci-tariff"
+                                value="2500" required class="form-control"></div>
+                        <div class="form-group"><label>Advance (₹)</label><input type="number" id="ci-advance" value="0"
+                                class="form-control"></div>
+                        <div class="form-actions mt-4">
+                            <button type="button" class="btn btn-outline" onclick="app.showEmptyState()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Confirm Check-in</button>
+                        </div>
+                    </form>
+                </div>
+        </div>
+        </aside>
+    </div>
+
+    <!-- RESTAURANT WAITER PORTAL -->
+    <div id="view-rest-waiter" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar"
+            style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+
+        <div class="waiter-layout" id="rest-waiter-main-layout">
+            <div class="waiter-sidebar glass-panel">
+                <h2 id="rest-waiter-sidebar-title">Select Rest. Table</h2>
+                <div class="waiter-room-list" id="rest-waiter-table-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="waiter-pos glass-panel" id="rest-waiter-pos-area" style="opacity: 0.5; pointer-events: none;">
+                <div class="pos-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <h2 id="rest-waiter-pos-title">Select a table</h2>
+                        <button id="btn-link-table" class="btn btn-outline"
+                            style="display: none; padding: 0.3rem 0.8rem; font-size: 0.9rem; border-color: #A020F0; color: #A020F0;"
+                            onclick="app.showLinkTableModal()">🔗 Link Another Table</button>
+                    </div>
+                    <span id="rest-waiter-table-info" class="text-gray text-sm"></span>
+                </div>
+                <div class="pos-body">
+                    <div style="margin-bottom: 1rem;">
+                        <input type="search" id="rest-waiter-menu-search" class="form-control"
+                            placeholder="Search menu..." oninput="app.filterWaiterMenu('rest-waiter')"
+                            style="background: rgba(15,23,42,0.9); padding: 0.8rem; color: white; border: 1px solid gold; border-radius: 8px; width: 100%; box-shadow: 0 4px 10px rgba(255,215,0,0.1);">
+                    </div>
+                    <div class="pos-menu" id="rest-waiter-menu-grid"></div>
+                    <div class="pos-cart">
+                        <div class="cart-items" id="rest-waiter-cart-items"></div>
+                        <div class="cart-total mt-4">
+                            <div class="d-flex justify-between"><span>Total</span><span class="font-bold text-xl">₹<span
+                                        id="rest-waiter-cart-total">0</span></span></div>
+                            <button class="btn btn-primary btn-block mt-3" onclick="app.placeOrder('rest-waiter')"
+                                id="btn-rest-waiter-order" disabled style="font-size: 1.25rem; padding: 1rem;">Place
+                                Order</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOTEL WAITER PORTAL (Room Service) -->
+    <div id="view-hotel-waiter" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar"
+            style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+
+        <div class="waiter-layout" id="hotel-waiter-main-layout">
+            <div class="waiter-sidebar glass-panel">
+                <h2 id="hotel-waiter-sidebar-title">Select Occupied Room</h2>
+                <div class="waiter-room-list" id="hotel-waiter-room-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="waiter-pos glass-panel" id="hotel-waiter-pos-area" style="opacity: 0.5; pointer-events: none;">
+                <div class="pos-header">
+                    <h2 id="hotel-waiter-pos-title">Select a room to order</h2>
+                </div>
+                <div class="pos-body">
+                    <div style="margin-bottom: 1rem;">
+                        <input type="search" id="hotel-waiter-menu-search" class="form-control"
+                            placeholder="Search menu..." oninput="app.filterWaiterMenu('hotel-waiter')"
+                            style="background: rgba(15,23,42,0.9); padding: 0.8rem; color: white; border: 1px solid gold; border-radius: 8px; width: 100%; box-shadow: 0 4px 10px rgba(255,215,0,0.1);">
+                    </div>
+                    <div class="pos-menu" id="hotel-waiter-menu-grid"></div>
+                    <div class="pos-cart">
+                        <div class="cart-items" id="hotel-waiter-cart-items"></div>
+                        <div class="cart-total mt-4">
+                            <div class="d-flex justify-between"><span>Total</span><span class="font-bold text-xl">₹<span
+                                        id="hotel-waiter-cart-total">0</span></span></div>
+                            <button class="btn btn-primary btn-block mt-3" onclick="app.placeOrder('hotel-waiter')"
+                                id="btn-hotel-waiter-order" disabled>Push to Kitchen & Ledger</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KITCHEN PORTAL (KDS) -->
+    <div id="view-kitchen" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar" style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+        <div class="kds-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2>Kitchen Display System (KDS)</h2>
+                <span class="text-gray">Live Sync Active</span>
+            </div>
+            <button class="btn btn-outline"
+                style="border-color: var(--color-mint-400); color: var(--color-mint-400); font-size: 0.9rem; padding: 0.4rem 0.8rem;"
+                onclick="app.unlockAudioContext()">🔔 Enable Audio</button>
+        </div>
+        <div class="kds-grid" id="kds-grid">
+            <!-- Orders Populated dynamically -->
+        </div>
+    </div>
+
+    <!-- RESTAURANT DESK PORTAL -->
+    <div id="view-rest-desk" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar"
+            style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <button class="btn btn-primary"
+                style="background: var(--color-indigo-400); border: none; padding: 0.5rem 1rem;"
+                onclick="app.generatePickupOrder()">🥡 NEW PICKUP ORDER</button>
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+        <div class="rest-desk-dashboard">
+            <div class="desk-layout">
+                <!-- Main Billing Area (2/3) -->
+                <div class="desk-main-content">
+                    <div class="d-flex justify-between align-center px-2">
+                        <h2 class="mb-0">Restaurant Desk & Billing</h2>
+                        <div class="daily-revenue-tracker"
+                            style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                            <span
+                                style="font-size: 0.85rem; color: var(--color-slate-400); text-transform: uppercase; letter-spacing: 1px;">Daily
+                                Revenue</span>
+                            <span id="desk-revenue-display"
+                                style="font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--color-green-400); filter: blur(4px); transition: filter 0.3s; pointer-events: none;">₹
+                                ****</span>
+                            <button class="btn btn-outline" style="padding: 0.2rem 0.5rem; border-color: transparent;"
+                                onclick="app.toggleRestRevVisibility(this)" title="Reveal Revenue">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                    <path
+                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="kpi-grid mb-4" style="grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div class="kpi-card glass-panel" style="padding: 1rem;">
+                            <div class="kpi-title">Total Seats Occupied</div>
+                            <div class="kpi-value" id="rest-desk-pax" style="font-size: 1.5rem;">0</div>
+                        </div>
+                        <div class="kpi-card glass-panel" style="padding: 1rem;">
+                            <div class="kpi-title">Active Tables</div>
+                            <div class="kpi-value" id="rest-desk-active-tables" style="font-size: 1.5rem;">0</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; flex: 1;">
+                        <div class="desk-tables glass-panel" style="padding: 1.5rem; overflow-y: auto;">
+                            <h3 class="mb-3">Live Table Grid</h3>
+                            <div class="table-grid" id="rest-desk-table-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <div class="desk-grid-header mt-4">
+                                <h3>🥡 Active Pick-Up Orders</h3>
+                            </div>
+                            <div id="rest-desk-pickup-list" class="glass-panel"
+                                style="padding: 1rem; min-height: 100px; border-radius: 12px; display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0,0,0,0.2);">
+                                <div class="text-center text-gray" style="padding: 1rem;">No active pickups</div>
+                            </div>
+                        </div>
+
+                        <div class="desk-checkout glass-panel"
+                            style="padding: 1.5rem; display: flex; flex-direction: column;">
+                            <h3 class="mb-3" id="desk-checkout-title">Checkout</h3>
+                            <div id="desk-checkout-content" style="flex: 1; display: flex; flex-direction: column;">
+                                <div class="text-gray">Select an occupied table to generate final bill.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Panel (1/3) -->
+                <div class="desk-notifications-panel glass-panel">
+                    <h3 class="mb-4 d-flex justify-between align-center">
+                        <span>Notifications</span>
+                        <span class="badge">ACTIVE</span>
+                    </h3>
+                    <div id="desk-notifications-list" style="flex: 1; overflow-y: auto; padding-right: 0.5rem;">
+                        <!-- Populated dynamically -->
+                        <div class="text-center text-gray mt-5">No recent updates.</div>
+                    </div>
+
+                    <!-- NEW: MENU & AVAILABILITY TOOLS -->
+                    <div class="desk-tools-section mt-4 pt-4" style="border-top:1px solid var(--glass-border);">
+                        <h4 class="mb-3 color-primary" style="color:var(--gold-primary);">Desk Utilities</h4>
+                        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                            <button class="btn btn-outline btn-block" style="text-align:left; padding:12px;" onclick="openAvailabilityModal()">
+                                🚫 Make Food Unavailable
+                            </button>
+                            <button class="btn btn-outline btn-block" style="text-align:left; padding:12px;" onclick="const url = prompt('Enter CSV Menu URL:'); if(url) app.db.syncMenuFromCSV(url);">
+                                🔄 Sync Menu (CSV/Excel)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- RESTAURANT PICKUP PORTAL -->
+    <div id="view-rest-pickup" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 id="pickup-pos-title">New Pickup Order</h2>
+            <button class="btn btn-outline" onclick="app.switchPortal('rest-desk')">Back to Desk</button>
+        </div>
+        <div class="pos-layout" id="rest-pickup-pos-area">
+            <div class="menu-column">
+                <div class="search-bar-wrapper mb-4">
+                    <input type="text" id="rest-pickup-menu-search" class="search-input" placeholder="Search menu..."
+                        oninput="app.filterWaiterMenu('rest-pickup')">
+                </div>
+                <div class="menu-grid" id="rest-pickup-menu-grid"></div>
+            </div>
+            <div class="cart-column glass-panel">
+                <h3>Order Cart</h3>
+                <div id="rest-pickup-cart-items" style="flex:1; overflow-y:auto; margin: 1rem 0;"></div>
+                <div class="cart-footer">
+                    <div class="d-flex justify-between mb-3"><span>Total</span><span class="font-bold">₹<span
+                                id="rest-pickup-cart-total">0</span></span></div>
+                    <button class="btn btn-success btn-block" id="btn-rest-pickup-order" disabled
+                        onclick="app.placeOrder('rest-pickup', 'pickup')">PLACE ORDER</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. OWNER DASHBOARD VIEW (All-in-One) -->
+    <div id="view-owner" class="portal-content" style="display: none;">
+        <div class="luxury-portal-header">
+            <div class="luxury-identity golden-brand">BARAK RESIDENCY, SILCHAR</div>
+            <div class="portal-time-luxury">--:-- --</div>
+        </div>
+        <div class="portal-top-bar" style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+            <button class="btn btn-outline btn-logout" onclick="app.exitIsolatedMode()">Logout</button>
+        </div>
+        <div class="owner-dashboard">
+            <div class="d-flex justify-between mb-3">
+                <h2 class="mb-3">Executive Dashboard</h2>
+                <div id="conn-status" class="status-badge"
+                    style="background: rgba(74, 222, 128, 0.1); color: var(--color-green-400); font-weight:bold; font-size: 0.85rem;">
+                    <span
+                        style="display:inline-block; width:8px; height:8px; border-radius:50%; background:currentColor; margin-right:4px;"></span>
+                    Cloud Synced
+                </div>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card glass-panel">
+                    <div class="kpi-title">Room Revenue Today</div>
+                    <div class="kpi-value" id="kpi-room-revenue">0</div>
+                </div>
+                <div class="kpi-card glass-panel">
+                    <div class="kpi-title">Total Rest. Earnings</div>
+                    <div class="kpi-value" id="kpi-rest-revenue">0</div>
+                </div>
+                <div class="kpi-card glass-panel">
+                    <div class="kpi-title">Rest. Customers Today</div>
+                    <div class="kpi-value" id="kpi-rest-pax">0</div>
+                </div>
+                <div class="kpi-card glass-panel" style="border-color: rgba(99, 102, 241, 0.5); grid-column: span 3;">
+                    <div class="kpi-title" style="color: var(--color-indigo-400)">Approx. EBITDA</div>
+                    <div class="kpi-value" id="kpi-ebitda">0</div>
+                    <div class="text-sm mt-2 text-gray" style="font-size:0.75rem;">(Room Rev + Rest
+                        Earnings) - (Salaries + Food Costs + Utilities + Stock Shortages)</div>
+                </div>
+            </div>
+
+            <div class="charts-row mt-4">
+                <div class="chart-container glass-panel">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div class="chart-container glass-panel">
+                    <canvas id="profitabilityChart"></canvas>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+                <div class="sales-history glass-panel">
+                    <h3>Recent Kitchen Sales</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Time (IST)</th>
+                                <th>Target</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-history-body"></tbody>
+                    </table>
+                </div>
+
+                <!-- EMPLOYEE PORTAL MOVED HERE -->
+                <div class="employee-layout glass-panel" style="padding:1.5rem; max-height: 400px; overflow-y: auto;">
+                    <div class="d-flex justify-between mb-4">
+                        <h3>Staff Directory</h3>
+                        <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+                            onclick="alert('Add Employee Modal placeholder')">+ Add</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Net Payable</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employee-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- INVENTORY PORTAL MOVED HERE -->
+            <div class="mt-4 glass-panel" style="padding: 1.5rem;">
+                <h2 class="mb-3">Inventory & Procurement</h2>
+                <div class="inventory-layout" style="display:flex; gap:1.5rem;">
+                    <div
+                        style="flex:2; background:rgba(0,0,0,0.2); border-radius:12px; padding:1.5rem; border:1px solid var(--glass-border);">
+                        <h3 class="mb-3">Current Stock</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Stock</th>
+                                    <th>Threshold</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-list"></tbody>
+                        </table>
+                    </div>
+                    <div
+                        style="flex:1; background:rgba(239, 68, 68, 0.1); border-radius:12px; padding:1.5rem; border:1px solid rgba(239, 68, 68, 0.3);">
+                        <h3 class="mb-3 color-primary" style="color:var(--color-red-500)">Purchase
+                            Requirements</h3>
+                        <ul id="purchase-list"
+                            style="list-style:none; padding:0; display:flex; flex-direction:column; gap:0.5rem;">
+                            <li class="text-gray text-sm">All stocks look good.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    </main>
+    </div>
+    </div><!-- END ROOT OVERWRITE WRAPPER -->
+
+    <!-- GUEST PORTAL (Mobile URL Override) -->
+    <div id="guest-portal" class="guest-portal" style="display: none;">
+        <div class="guest-header">
+            <img src="YUKT.ai.png" alt="YUKT" class="guest-logo"
+                onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'40\' fill=\'none\' stroke=\'%236366F1\' stroke-width=\'5\'/><text x=\'50\' y=\'55\' font-size=\'20\' font-family=\'sans-serif\' text-anchor=\'middle\' fill=\'%236366F1\'>YUKT</text></svg>'">
+            <div>
+                <h2>Room Service</h2>
+                <p id="guest-room-number" class="text-sm color-primary">Room --</p>
+            </div>
+        </div>
+
+        <div class="guest-menu" id="guest-menu-grid">
+            <!-- Swiggy style menu items -->
+        </div>
+
+        <div class="guest-cart-bar" id="guest-cart-bar" style="transform: translateY(100%);">
+            <div class="cart-details">
+                <span id="guest-cart-count">0 items</span>
+                <span class="font-bold">₹<span id="guest-cart-total">0</span></span>
+            </div>
+            <button class="btn btn-primary" onclick="app.placeOrder('guest')">Order Now</button>
+        </div>
+
+        <!-- Order Success Overlay -->
+        <div class="guest-success" id="guest-success" style="display:none;">
+            <div class="success-icon">✅</div>
+            <h2 id="guest-success-title">Order Placed!</h2>
+            <p id="guest-success-msg">The kitchen is preparing your food.</p>
+            <div id="guest-success-id" style="font-size:1.5rem; font-weight:bold; color:var(--gold-primary); margin:10px 0;">ID: ----</div>
+            <p class="text-sm text-gray mt-2">Amount added to room ledger.</p>
+            <button class="btn btn-outline mt-4"
+                onclick="document.getElementById('guest-success').style.display='none'">Order More</button>
+        </div>
+    </div>
+
+
+    <!-- SECURITY MODAL OVERLAY -->
+    <div id="security-modal" class="modal-overlay" style="display: none;">
+        <div class="security-box" style="position: relative;">
+            <button class="btn btn-icon" onclick="app.closeSecurityModal()"
+                style="position: absolute; top: 1rem; left: 1rem; font-size: 1.5rem; color: var(--color-slate-400); background: none; border: none; cursor: pointer; padding: 0;">✖</button>
+            <div class="security-header mb-4">
+                <h3 id="sec-title" class="color-primary m-0" style="margin: 0; text-align: center;">Restricted Access
+                </h3>
+            </div>
+            <p id="sec-desc" class="text-gray mb-4 text-sm" style="text-align: center;">Please enter your department
+                password.</p>
+
+            <form id="security-form" onsubmit="app.submitSecurity(event)">
+                <div class="form-group mb-4">
+                    <label>Password (<span id="sec-hint"></span>)</label>
+                    <input type="password" id="sec-pwd" class="form-control" autocomplete="off" autofocus required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100" style="padding: 1rem;">Authenticate</button>
+            </form>
+        </div>
+    </div>
+    <!-- PROFESSIONAL FEEDBACK SYSTEM -->
+    <div id="success-overlay-pms" class="success-overlay-pms" style="display: none;">
+        <!-- Filled Dynamically by app.js triggerSuccessOverlay(context, order) -->
+    </div>
+
+    <!-- Using a short generic base64 sine wave beep for the chime -->
+    <audio id="success-chime"
+        src="data:audio/wav;base64,UklGRloAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YToAAAAA/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/w="
+        preload="auto"></audio>
+    <audio id="kds-chime"
+        src="data:audio/wav;base64,UklGRloAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YToAAAAA/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/w="
+        preload="auto"></audio>
+    <audio id="success-sound" src="orderconfirm.mp3" preload="auto"></audio>
+
+    <!-- FULLSCREEN RE-ENTRY -->
+    <button id="reenter-fs-btn" class="btn btn-primary"
+        style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 10000; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 50px; padding: 1rem 2rem; font-size: 1.1rem; border: 2px solid #fff;"
+        onclick="if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});">
+        📺 Re-enter Terminal Mode
+    </button>
+
+    <!-- CUSTOM ERP MODALS -->
+    <!-- Alert Modal -->
+    <div id="alert-modal" class="modal-overlay" style="display: none; z-index: 10005;">
+        <div class="security-box" style="padding: 2rem; width: 350px;">
+            <div class="security-header mb-4">
+                <h3 class="color-primary m-0" style="text-align: center;">Notification</h3>
+            </div>
+            <p id="alert-msg" class="text-md mb-4" style="text-align: center; color: white;"></p>
+            <button class="btn btn-primary w-100" onclick="document.getElementById('alert-modal').style.display='none'"
+                style="padding: 0.8rem;">OK</button>
+        </div>
+    </div>
+
+    <!-- Order Confirmation Modal -->
+    <div id="order-confirm-modal" class="modal-overlay" style="display: none; z-index: 10006;">
+        <div class="security-box" style="padding: 2rem; width: 450px;">
+            <div class="security-header mb-4">
+                <h3 class="color-primary m-0" style="text-align: center;">Confirm Order: <span
+                        id="confirm-order-id"></span></h3>
+            </div>
+            <div id="confirm-order-items" class="text-md mb-4"
+                style="text-align: left; color: white; max-height: 250px; overflow-y: auto;"></div>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <button class="btn btn-primary w-100"
+                    style="padding: 1rem; font-size: 1.1rem; background: linear-gradient(135deg, #10b981, #059669); border: none;"
+                    onclick="app.confirmAndSendOrder()">Confirm & Send to Kitchen</button>
+                <button class="btn btn-outline w-100" style="padding: 0.8rem;"
+                    onclick="document.getElementById('order-confirm-modal').style.display='none'">Edit Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal-overlay" style="display: none; z-index: 10005;">
+        <div class="security-box" style="padding: 2rem; width: 400px;">
+            <div class="security-header mb-4">
+                <h3 class="color-primary m-0" style="text-align: center;">Action Required</h3>
+            </div>
+            <p id="confirm-msg" class="text-md mb-4" style="text-align: center; color: white;"></p>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="app.resolveConfirm(false)">Cancel</button>
+                <button class="btn btn-danger"
+                    style="flex: 1; border-color: var(--color-red-500); color: var(--color-red-500);"
+                    onclick="app.resolveConfirm(true)">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Check-in Modal -->
+    <div id="waiter-modal-overlay" class="modal-overlay" style="display: none; z-index: 10005;">
+        <div class="security-box" style="padding: 2.5rem 2rem; width: 450px; position: relative; max-width: 95vw;">
+            <div class="security-header mb-4">
+                <h3 class="color-primary m-0" style="text-align: center;" id="tci-title">Table Check-in</h3>
+            </div>
+            <form id="table-checkin-form" onsubmit="app.submitTableCheckin(event)">
+                <input type="hidden" id="tci-tableid">
+
+                <!-- ACTIVE GUESTS (Dynamically Populated if Occupied) -->
+                <div id="tci-active-guests-list"
+                    style="display: none; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;"></div>
+
+                <!-- NEW GUEST INPUTS (Hidden if table is occupied) -->
+                <div id="tci-inputs-wrapper">
+                    <div class="form-group mb-4" style="text-align: left;">
+                        <label>Guest Name / Details</label>
+                        <input type="text" id="tci-name" class="form-control" autocomplete="off" autofocus
+                            placeholder="Walk-in Guest" style="min-height: 50px;">
+                    </div>
+                    <div class="form-group mb-4" style="text-align: left;">
+                        <label>Number of Persons (Pax)</label>
+                        <input type="number" id="tci-pax" class="form-control" autocomplete="off" min="1" max="10"
+                            value="2" style="min-height: 50px;">
+                    </div>
+                </div>
+
+                <div id="link-btn-wrapper" style="display: none; margin-bottom: 1.5rem;">
+                    <button type="button" class="btn btn-outline"
+                        style="width: 100%; border-color: #A020F0; color: #A020F0; padding: 1rem; border-radius: 8px; font-weight: bold; border-style: dashed;"
+                        onclick="app.showLinkTableModal()">🔗 LINK ANOTHER TABLE</button>
+                </div>
+
+                <!-- BUTTON CONTROLS -->
+                <div style="display: flex; gap: 1rem; flex-direction: column;" id="tci-btn-wrapper">
+                    <button type="button" class="btn btn-success"
+                        style="display:none; width: 100%; border-radius: 8px; padding: 1rem;" id="btn-reorder-table"
+                        onclick="app.reorderTableModal()">Existing Guest</button>
+                    <button type="button" class="btn btn-outline"
+                        style="display:none; border-color: var(--color-mint-400); color: var(--color-mint-400); width: 100%; border-radius: 8px; padding: 1rem;"
+                        id="btn-add-new-guest" onclick="app.addNewGuestToTable()">Add New Guest</button>
+
+                    <button type="submit" class="btn btn-primary"
+                        style="width: 100%; border-radius: 8px; padding: 1rem; font-size: 1.1rem; font-weight: bold;"
+                        id="btn-confirm-tci">Start Order</button>
+                    <button type="button" class="btn btn-outline border-transparent text-gray mt-2"
+                        onclick="app.cancelTableModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Print Template -->
+    <div id="print-area"></div>
+
+    <!-- On-Screen Invoice Preview Modal -->
+    <div id="invoice-preview-modal" class="modal-overlay" style="display: none; z-index: 10000;">
+        <div class="security-box" style="max-width: 500px; padding: 2rem;">
+            <div class="d-flex justify-between align-center mb-4">
+                <h3 class="color-primary m-0">Final Bill Preview</h3>
+                <button class="btn btn-icon"
+                    onclick="document.getElementById('invoice-preview-modal').style.display = 'none'"
+                    style="font-size: 1.5rem; color: var(--color-slate-400); background: none; border: none; cursor: pointer;">✖</button>
+            </div>
+            <div id="invoice-preview-content" class="bg-white"
+                style="color: black; padding: 1.5rem; text-align: left; height: 400px; overflow-y: auto; font-family: monospace;">
+                <!-- Filled dynamically -->
+            </div>
+            <div class="d-flex justify-end mt-4">
+                <button class="btn btn-success" id="btn-print-final-bill">Print 2 Copies & Close Table</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link Table Modal (Full Screen Drawer) -->
+    <div id="link-table-modal" class="modal-overlay"
+        style="display: none; z-index: 10005; align-items: stretch; justify-content: stretch; padding: 2rem;">
+        <div class="security-box"
+            style="width: 100%; height: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; background: rgba(15, 23, 42, 0.95); padding: 0; overflow: hidden; border: 1px solid var(--glass-border);">
+
+            <!-- Left Side: Active Links Tracker -->
+            <div
+                style="padding: 2rem; border-right: 1px solid var(--glass-border); display: flex; flex-direction: column;">
+                <h2 style="color: #A020F0; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.5rem;">🔗</span> Master Bill Group</h2>
+                <p class="text-gray" id="link-table-subtitle" style="margin-bottom: 2rem;">Loading master context...</p>
+
+                <h3 style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--glass-border);">
+                    Previously Linked Tables</h3>
+                <div id="link-existing-list" style="flex: 1; overflow-y: auto;">
+                    <!-- Populated dynamically -->
+                    <div class="text-center text-gray" style="padding: 2rem;">No previously linked tables</div>
+                </div>
+
+                <button class="btn btn-outline" style="margin-top: 1rem; padding: 1rem;"
+                    onclick="document.getElementById('link-table-modal').style.display='none'">← Return to POS</button>
+            </div>
+
+            <!-- Right Side: New Link Drawer Selection -->
+            <div style="padding: 2rem; display: flex; flex-direction: column; background: rgba(0,0,0,0.2);">
+                <h2 style="margin-bottom: 1rem;">Link A New Table</h2>
+                <p class="text-gray mb-4">Select an available table from the drawer to expand your guest capacity.</p>
+
+                <div class="form-group mb-4">
+                    <label>How many Pax are you linking?</label>
+                    <input type="number" id="link-pax-input" class="form-control" autocomplete="off" min="1" value="1"
+                        oninput="app.renderLinkTableDropdown()"
+                        style="background: rgba(0,0,0,0.5); padding: 1.25rem; color: white; border: 1px solid var(--glass-border); border-radius: 8px; font-size: 1.2rem;">
+                </div>
+
+                <div class="form-group flex-1" style="display: flex; flex-direction: column;">
+                    <label>Available Tables (Drag Drawer)</label>
+                    <select id="link-table-dropdown" class="form-control mb-4" size="8"
+                        style="flex: 1; background: rgba(0,0,0,0.5); padding: 1rem; color: white; border: 1px solid var(--glass-border); border-radius: 8px; width: 100%; font-size: 1.1rem;">
+                        <!-- Options generated here -->
+                    </select>
+                </div>
+
+                <button class="btn btn-primary"
+                    style="background-color: #A020F0; border-color: #A020F0; padding: 1.25rem; font-size: 1.2rem;"
+                    onclick="app.submitLinkTable()">Confirm Link & Return</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="room-session-modal" class="modal-overlay" style="display: none; z-index: 10007;">
+        <div class="security-box" style="padding: 2.5rem 2rem; width: 450px; text-align: center;">
+            <div class="security-header mb-4">
+                <h2 id="rsm-room-title" style="color: var(--gold-primary); font-family: 'Outfit', serif;">Room 101</h2>
+                <p class="text-gray">An active order session is already in progress.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <button class="btn btn-primary" id="btn-rsm-addon" style="padding: 1.5rem; font-size: 1.1rem; border: 2px solid var(--gold-primary); background: var(--gold-dim); color: white;">
+                    Add to Active Session <span id="rsm-active-id" class="font-bold">1011</span>
+                </button>
+                <div style="display: flex; align-items: center; gap: 1rem; margin: 0.5rem 0;">
+                    <div style="flex: 1; height: 1px; background: var(--glass-border);"></div>
+                    <span class="text-xs text-gray">OR</span>
+                    <div style="flex: 1; height: 1px; background: var(--glass-border);"></div>
+                </div>
+                <button class="btn btn-outline" id="btn-rsm-new" style="padding: 1.25rem; font-size: 1rem; border-color: var(--color-slate-400); color: var(--color-slate-400);">
+                    Start Fresh Order <span id="rsm-next-id" class="font-bold">1012</span>
+                </button>
+                <button class="btn btn-outline" style="margin-top: 1rem; border: none; text-decoration: underline;"
+                    onclick="document.getElementById('room-session-modal').style.display='none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quantity-prompt-modal" class="modal-overlay" style="display: none; z-index: 10006;">
+        <div class="security-box" style="padding: 2.5rem 2rem; width: 400px; text-align: center; position: relative;">
+
+            <div class="security-header mb-4">
+                <h3 class="m-0" id="qp-item-name" style="color: var(--color-primary);">Item Name</h3>
+            </div>
+
+            <!-- View 1: Select Variant -->
+            <div id="qp-view-variant" style="display: flex; flex-direction: column; gap: 1rem;">
+                <p class="text-sm text-gray" style="margin-bottom: 0.5rem; margin-top: -1rem;">Select Portion Size</p>
+                <button class="btn btn-outline"
+                    style="padding: 1.5rem; font-size: 1.1rem; border-color: var(--color-primary); color: var(--color-primary);"
+                    onclick="app.qpSelectVariant('Full')">Full Plate</button>
+                <button class="btn btn-outline"
+                    style="padding: 1.5rem; font-size: 1.1rem; border-color: var(--color-indigo-400); color: var(--color-indigo-400);"
+                    onclick="app.qpSelectVariant('Half')">Half Plate</button>
+                <button class="btn btn-outline" style="margin-top: 1rem; border: none; text-decoration: underline;"
+                    onclick="document.getElementById('quantity-prompt-modal').style.display='none'">Cancel</button>
+            </div>
+
+            <!-- View 2: Select Quantity -->
+            <div id="qp-view-quantity" style="display: none; flex-direction: column; gap: 1.5rem;">
+                <p class="text-sm text-gray" id="qp-selected-variant-text"
+                    style="color: var(--color-primary); font-weight: bold; margin-bottom: 0px; margin-top: -1rem;">Full
+                    Plate</p>
+
+                <div class="form-group" style="text-align: left;">
+                    <label>Enter Quantity</label>
+                    <div
+                        style="display: flex; align-items: center; gap: 1rem; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border: 1px solid var(--glass-border);">
+                        <button class="btn btn-outline"
+                            style="width: 50px; height: 50px; border-radius: 50%; padding: 0; font-size: 1.5rem;"
+                            onclick="document.getElementById('qp-qty').value = Math.max(1, parseInt(document.getElementById('qp-qty').value) - 1)">-</button>
+                        <input type="number" id="qp-qty" min="1" value="1"
+                            style="width: 80px; text-align: center; background: transparent; border: none; color: white; font-size: 2rem; font-weight: bold; outline: none;">
+                        <button class="btn btn-outline"
+                            style="width: 50px; height: 50px; border-radius: 50%; padding: 0; font-size: 1.5rem;"
+                            onclick="document.getElementById('qp-qty').value = parseInt(document.getElementById('qp-qty').value) + 1">+</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn btn-outline" style="flex: 1;" onclick="app.qpBackToVariant()">← Back</button>
+                    <button class="btn btn-primary" style="flex: 2; font-size: 1.1rem;"
+                        onclick="app.submitItemQuantity()">Add to Cart</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="availability-modal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.85); justify-content: center; align-items: center;">
+        <div class="security-box" style="padding: 2.5rem 2rem; width: 500px; max-height: 80vh; display: flex; flex-direction: column; position:relative;">
+            <button onclick="document.getElementById('availability-modal').style.display='none'" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
+            <div class="security-header mb-4">
+                <h2 style="color: var(--gold-primary);">🚫 Food Availability Manager</h2>
+                <p class="text-gray">Toggle items ON/OFF. Changes apply instantly to all portals.</p>
+            </div>
+            <div id="availability-list" style="flex: 1; overflow-y: auto; margin-bottom: 20px;">
+                <!-- Populated dynamically -->
+            </div>
+            <button class="btn btn-primary" onclick="document.getElementById('availability-modal').style.display='none'">Close Manager</button>
+        </div>
+    </div>
+
+    <style>
+        .menu-category-header {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%);
+            padding: 10px;
+            border-radius: 4px;
+        }
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--color-green-400); }
+        input:checked + .slider:before { transform: translateX(22px); }
+    </style>
+    <script>
+        function openAvailabilityModal() {
+            const m = document.getElementById('availability-modal');
+            if (m) { m.style.display = 'flex'; }
+            if (window.app) app.renderAvailabilityTool();
+        }
+    </script>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
